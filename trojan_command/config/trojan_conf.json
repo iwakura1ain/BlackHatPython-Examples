@@ -1,8 +1,10 @@
 [
     {
-        "module": "dirlister"
+        "module": "list_dir",
+        "args": []
     },
     {
-        "module": "env"
+        "module": "list_env",
+        "args": []
     }
 ]
