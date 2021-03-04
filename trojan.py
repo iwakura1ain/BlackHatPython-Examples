@@ -61,8 +61,7 @@ class Task(object):
 
         return (self.task_name == other.task_name) and (self.task_args == other.task_args) #and (self.task_thread == other.task_thread)
 
-    def __contains__(self, other):
-        flag = False
+    def __contains__(self, other):        flag = False
         for task_instance in other:
             if(self == task_instance):
                 return True
@@ -163,7 +162,7 @@ def GetFile(dir):
     print("Downloading: %s" % dir)
     f = repo.file_contents(dir)
     
-    return f.content
+    return f
 
 def GetConfig():
     global CONFIG
@@ -174,7 +173,7 @@ def GetConfig():
     while True:
         print("Attempting to receive taskset...")
         
-        config = loads(base64.b64decode(GetFile(CONFIG_DIR))) #simplejson, base64 used
+        config = loads(base64.b64decode(GetFile(CONFIG_DIR)).content) #simplejson, base64 used
         #config = loads(ReadFile("/home/dks/Development/Python/blackhat-python/" + CONFIG_DIR))
         if(CONFIG != config):
             CONFIG = config
