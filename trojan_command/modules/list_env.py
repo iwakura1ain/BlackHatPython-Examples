@@ -1,8 +1,7 @@
-#!/usr/bin/python3
-
 import os
 
-def run(**args):
-    env = str(os.environ)
-    return env
+def run(args, flags):
+    env = os.environ
+    print(str(env))
+    return str(env)
     

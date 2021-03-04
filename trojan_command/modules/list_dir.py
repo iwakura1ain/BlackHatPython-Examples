@@ -1,6 +1,6 @@
-#!/usr/bin/python3
 import os
 
-def run(**args):
+def run(args, flags):
     files = os.listdir(".")
-    return str(files)
+    print(files)
+    return files

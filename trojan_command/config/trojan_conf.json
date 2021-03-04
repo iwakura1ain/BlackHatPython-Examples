@@ -1,10 +1,10 @@
 [
     {
-        "module": "list_dir",
+        "module": "list_env",
         "args": []
     },
     {
-        "module": "list_env",
+        "module": "list_dir",
         "args": []
     }
 ]
